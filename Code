@@ -1,0 +1,383 @@
+# Web Scraper that scrapes for the current job of a person based on their linkedin URL by using Selenium,
+# Beautiful Soup, and a chrome webdriver. Install Chrome Webdriver before running code.
+
+# Can be improved by using parallel processing/threads and creating while loops instead of guessing "time.sleep"
+
+# Average time: 1.5 hours for 450 linkedin URLs
+
+# Make sure that column names of .csv file are "University graduation year" and "iX Year" and if needed, change name of
+# .csv file
+
+import time
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from parsel import Selector
+import numpy as np
+import calendar
+import pandas as pd
+from collections import OrderedDict
+from selenium import webdriver
+from cssselect import GenericTranslator, SelectorError
+from selenium.webdriver.common.by import By
+import os
+
+# environment variables which store the LinkedIN username and password for the webscraper
+# if variable not found, prompts for username & password
+
+user_id = os.getenv('user')
+
+password = os.getenv('password')
+
+if(user_id == None):
+    user_id = input('Enter your username')
+
+if(password == None):
+    password = input('Enter your password:')
+    
+def scraped_data(lis,lis2):
+    """
+    input: 
+    lis : data scraped from experience section of individual in WebElement form
+    lis2 : data scraped from education section of individual in WebElement form 
+    output:
+    lis1 : Experience section in text in a list
+    lis3: Education section in text in a list
+    """
+    lis1 = []
+    lis3 = []
+    for item in lis:
+        lis1.append(item.text)
+    for item in lis2:
+        lis3.append(item.text)
+    return lis1,lis3
+def clean_experience(lis1):
+    """
+    input:
+    lis1: Experience section in text from scraped_data()
+    output:
+    data: Experience section in a readable nested list, each experience has its own index.
+    """
+    data = []
+    i = 0
+
+    while( i < len(lis1)):
+        data.append(lis1[i].split("\n"))
+        i+=1
+    ls = []
+    ind = []
+    for i,j in enumerate(data):
+        j = sorted(j)
+        if j not in ls:
+            ind.append(i)
+            ls.append(j)
+    data = [data[x] for x in ind]
+    
+    return data
+def clean_college(lis3):
+    """
+    input: 
+    
+    lis3 from scraper
+    output:
+    
+    data1: Entire education section in a nested list
+    endYear: College Graduation year
+    PostGrad: If individual did postGrad - gives what course,university, year
+    
+    """
+    
+    # Code finds the data where keyword: "Bachelor" is in the nested list of data1 and if it is not the first
+    # entity in the nested list of data1, then it knows that individual did something after UnderGrad, then sets
+    # postGrad to the first item in data1.
+    
+    data1 = []
+    index = 0
+    while( i < len(lis3)):
+        data1.append(lis3[i].split("\n"))
+        i+=1
+    for var in range(len(data1)):
+        for i in range(len(data1[var])):
+            if("Bachelor" in data1[var][i]):
+                index = (var,i)
+                break
+    var = 0 
+    i = 0
+    if(index == 0):
+        for var in range(len(data1)):
+            for i in range(len(data1[var])):
+                if("University" in data1[var][i]):
+                    index = (var,i)
+                    break
+                break
+                
+    
+    study = data1[0]
+    education = []
+    if(index[0] != 0):
+        for x in range(len(study)): 
+            if(study[x] == "Field Of Study"):
+                education.append(study[x+1])
+            if(study[x] == "Dates attended or expected graduation"):
+                education.append(study[x+1])
+        postGrad = education
+
+        
+
+    endYear = "NA"
+    college = data1[index[0]]
+    colleges = 0
+    
+    # optional commented out code - if user wants to check for first post job after postGrad, model
+    # currently uses first job after graduation and if that is not given, assumes graduation is 1 year
+    # after iX year
+    
+#     if(endYear == "NA"):
+#         for colleges in range(len(college)):
+#             try:
+#                 if(college[colleges] == "Dates attended or expected graduation"):
+#                     college = college[colleges + 1]
+#                     endYear = college.split()[2] 
+#                 break
+#             except: IndexError
+#             pass
+
+
+    if(endYear == "NA"):
+        endYear = college_graduation[URL]
+    if(endYear == "NA"):
+        endYear = iXgrad[URL] + 1
+        
+    return data1,endYear,postGrad
+    
+
+def find_post_job(data):
+    z = []
+    num = []
+    reason = []
+    count = 0
+    counter = 0
+    
+    for i in range(len(data)):
+        count = 0
+        for j in range(len(data[i])):
+            if(data[i][j] == "Dates Employed"):
+                count += 1
+                year = data[i][j+1]
+                z.append(year.split())
+        if(count > 1):
+            num.append(data[i])
+            reason.append(i)
+
+    lsTorF = []
+    for m in range(len(z)):
+            temp = []
+            for n in range(len(z[m])):
+                if(z[m][n] == endYear):
+                    temp.append("True")
+                else:
+                    temp.append("False")
+            lsTorF.append(temp)
+
+    iterator = []
+    vals = [[] for _ in range(len(num))]
+    test = [[] for _ in range(len(num))]
+    for i in range(len(num)):
+        for j in range(len(num[s])):
+            if(num[i][j] == "Title"):
+                iterator.append(j)
+                vals[i] = iterator[1:]
+        iterator = []
+        if(len(vals[s]) == 1):
+            temp = vals[i][0]
+            x = num[i][0:temp:]
+            y = num[i][temp:]
+            test[i] = ([x] + [y])
+        elif(len(vals[i]) > 1):
+            identify = 0
+            kemp = []
+            for k in range(len(vals[i])):
+                if(q == (len(vals) - 1)):
+                    temp = vals[i][k]
+                    x = num[i][identify:temp:]
+                    y = num[i][temp:]
+                    kemp.extend([x] + [y])
+                else:
+                    temp = vals[i][k]
+                    x = num[i][identify:temp:]
+                    kemp.append(x)
+                    identify = temp
+            test[i] = kemp
+
+
+    w = 0
+    reason = reason.reverse()
+    val = 0
+    reas = 0
+    w = (len(reason))
+    for reas in range(len(reason)):
+        w -= 1
+        counter = 0
+        kount = len(test[w])
+        while(counter < kount):
+            if(counter == 0):
+                data[reason[reas]] = test[w][0]
+                counter += 1
+            elif(counter > 0):
+                val = data.index(test[(w)][counter-1])
+                data.insert((val+1),(test[w][counter]))
+                counter += 1
+
+
+    reason = 'NA'
+    i,x,m,n,number1 = 0,0,0,0,0
+
+
+    count = []
+    month = []
+    ls10 = []
+    for i in range(len(lsTorF)) :
+        if(lsTorF[i][1] == "True"):
+            reason = i
+            count.append(i)
+    if(len(count) > 1):
+        reason = "NA"
+        for kend in range(len(count)):
+            month.append(z[count[kend]][0])
+            temp = list(calendar.month_abbr).index(month[kend])
+            ls10.extend([temp])
+        ls10[:] = [x - 5 for x in ls10]
+        m = min(i for i in ls10 if i >= 0)
+        index = ls10.index(m)
+        reason = count[index]
+        if(reason == "NA"):
+            reason = count[0]
+
+    if(reason == "NA"):
+        number1 = str(int(endYear)+1) 
+        for m in range(len(z)):
+            temp = []
+            for n in range(len(z[m])):
+                if(z[m][n] == (number1)):
+                    temp.append("True")
+                else:
+                    temp.append("False")
+            lsTorF.append(temp)
+        for i in range(len(lsTorF)):
+            if(lsTorF[i][1] == "True"):
+                reason = i
+    if(reason == "NA"):
+        lsTorF1 = []
+        for m in range(len(z)):
+            string = " ".join(z[m])
+            temp = [int(a) for a in string.split() if a.isdigit()]
+            lsTorF1.append(temp)
+
+        num1 = []
+        for kat in range(len(z)):
+            for kitty in range(len(z[kat])):
+                if(z[kat][kitty] == "Present"):
+                    lsTorF1[kat].extend(["Present"])
+        for torf in range(len(lsTorF1)):
+            try:
+                if(lsTorF1[torf][0] < int(endYear) and lsTorF1[torf][1] == "Present"):
+                    reason = torf
+                    break
+                elif(lsTorF1[torf][0] < int(endYear) and lsTorF1[torf][1] >= int(endYear)):
+                    reason = torf
+                    break
+            except IndexError:
+                pass
+    if(reason == "NA"):
+        reason = 1
+    output = data[reason]
+    answer = "NA"
+    if(output[0] == "Company Name"):
+        for outputs in range(len(output)):
+            if(output[outputs] == "Title"):
+                answer = output[outputs + 1]
+    else:
+        answer = output[0]
+    Employer_code = "NA"
+    for code in range(len(output)):
+        if(output[code] == "Company Name"):
+            Employer_code = output[code+1]
+    if("Company Name" not in output):
+        while(Employer_code == "NA"):
+            output = data[reason - 1]
+            for bean in range(len(output)):
+                if(output[bean] == "Company Name"):
+                    Employer_code = output[bean + 1]
+                    
+    return answer,Employer_code
+ pd.options.mode.chained_assignment = None 
+
+#sign into Linkedin
+path = os.path.dirname(os.path.abspath('chromedriver'))
+driver = webdriver.Chrome(path+"\chromedriver.exe")
+driver.get('https://www.linkedin.com/login?trk=guest_homepage-basic_nav-header-signin')   
+driver.find_element_by_xpath('//*[@id="username"]').send_keys(user_id) 
+driver.find_element_by_xpath('//*[@id="password"]').send_keys(password)
+driver.find_element_by_xpath('//*[@id="app__container"]/main/div/form/div[3]/button').click()
+results = []
+
+
+for URL in range(len(website)):
+    try :
+        # def main(df, driver, website, college_graduation, iX_Grad):
+        if(website[URL] == "NA"):
+            result = (["NA", "NA", "NA"])
+            results.append(result)
+    
+        else:
+            time.sleep(1)
+            driver.get(website[URL])
+            driver.page_source
+            sel= Selector(text=driver.page_source)
+            time.sleep(.5)
+            soup = BeautifulSoup(driver.page_source)
+            job_title = soup.find_all('h2')[0].getText()
+            time.sleep(1)
+            buttons = driver.find_elements_by_css_selector("button")
+            for button in buttons:
+                if "Show" in button.text.strip():
+                    button.click()
+                    time.sleep(1)
+            driver.page_source
+            sel= Selector(text=driver.page_source)
+            clickers = driver.find_elements_by_css_selector("button")
+            time.sleep(2)
+            for tick in clickers:
+                if "more" in tick.text.strip():
+                    tick.click()
+                break
+            time.sleep(1.5)
+            experience = driver.find_elements_by_xpath('//section[@id = "experience-section"]/ul//li')
+            time.sleep(1.5)
+            lis = driver.find_elements_by_xpath('//section[@id = "experience-section"]//li[contains(@class,"pv-profile-section")]')
+            time.sleep(1.5)
+            lis1 = []
+            lis3 = []
+            lis2 = driver.find_elements_by_xpath('//section[@id = "education-section"]//li[contains(@class,"pv-profile-section")]')
+            
+            lis1,lis3 = scraped_data(lis,lis2)
+            data = clean_experience(lis1)
+            data1,endYear,postGrad = clean_college(lis3)
+            answer,Employer_code = find_post_job(data)
+            
+            
+
+            result = []
+            result.append(Employer_code)
+            result.extend([answer]) 
+            result.extend([postGrad])
+
+
+            results.append(result)
+
+    except:
+        result = (["NA", "NA", "NA"])
+        results.append(result)
+    
+columns = ["First Post-College Employer From Code", "First Post-College Job Title From Code", "Post-Graduation"]
+data_result = pd.DataFrame(results, columns = columns)
+export_csv = data_result.to_csv(r'First_job.csv', index = None, header=True)
